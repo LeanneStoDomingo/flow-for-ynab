@@ -1,7 +1,8 @@
 from pyflowlauncher import Plugin, Result, ResultResponse, send_results
 from pyflowlauncher.settings import settings
 from pyflowlauncher.api import open_setting_dialog
-import ynab
+from pynab.pynab import Pynab
+from pynab.schemas import Budget
 
 
 ICO_PATH = "icon.png"
@@ -26,35 +27,33 @@ def query(query: str) -> ResultResponse:
         )
 
     if not query:
-        return send_results([])
-
-    try:
-        configuration = ynab.Configuration(access_token=access_token)
-
-        with ynab.ApiClient(configuration) as api_client:
-            budgets_api = ynab.BudgetsApi(api_client)
-            budgets_response = budgets_api.get_budgets()
-            budgets = budgets_response.data.budgets
-
-            results = [
-                Result(
-                    Title=budget.name,
-                    SubTitle="Click to select this budget",
-                    IcoPath=ICO_PATH,
-                )
-                for budget in budgets
-            ]
-
-            return send_results(results)
-
-    except ynab.exceptions.UnauthorizedException:
         return send_results(
             [
                 Result(
-                    Title="Token Error: 403 Unauthorized. Please make sure your access token is correct.",
-                    SubTitle="Click here or press Enter to go to the plugin settings",
+                    Title="budget",
+                    SubTitle="ynab budget <budget_name>",
                     IcoPath=ICO_PATH,
-                    JsonRPCAction=open_setting_dialog(),
                 )
             ]
         )
+
+    if query.startswith("budget"):
+        pynab = Pynab(access_token)
+
+        budgets = pynab.budgets
+
+        results = []
+
+        for budget_id in budgets:
+            budget: Budget = budgets[budget_id]
+            results.append(
+                Result(
+                    Title=budget.name,
+                    SubTitle=f"ID: {budget.id}",
+                    IcoPath=ICO_PATH,
+                )
+            )
+
+        return send_results(results)
+
+    return send_results([])
