@@ -1,11 +1,13 @@
 {
     "$schema": "https://www.flowlauncher.com/schemas/plugin.schema.json",
     "ID": "c6c9a0ba-5dd7-42c0-8b5a-25b8ba45d992",
-    "ActionKeywords": ["ynab"],
+    "ActionKeywords": [
+        "ynab"
+    ],
     "Name": "Flow for YNAB",
     "Description": "View your YNAB budget with Flow Launcher",
     "Author": "Leanne Sto. Domingo",
-    "Version": "0.0.1",
+    "Version": "0.0.2",
     "Language": "python",
     "Website": "https://github.com/LeanneStoDomingo/flow-for-ynab",
     "IcoPath": "./icon.png",
