@@ -1,0 +1,5 @@
+body:
+  - type: passwordBox
+    attributes:
+      name: access_token
+      label: Personal Access Token
