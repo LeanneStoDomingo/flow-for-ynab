@@ -28,20 +28,33 @@ def query(query: str) -> ResultResponse:
     if not query:
         return send_results([])
 
-    configuration = ynab.Configuration(access_token=access_token)
+    try:
+        configuration = ynab.Configuration(access_token=access_token)
 
-    with ynab.ApiClient(configuration) as api_client:
-        budgets_api = ynab.BudgetsApi(api_client)
-        budgets_response = budgets_api.get_budgets()
-        budgets = budgets_response.data.budgets
+        with ynab.ApiClient(configuration) as api_client:
+            budgets_api = ynab.BudgetsApi(api_client)
+            budgets_response = budgets_api.get_budgets()
+            budgets = budgets_response.data.budgets
 
-        results = [
-            Result(
-                Title=budget.name,
-                SubTitle="Click to select this budget",
-                IcoPath=ICO_PATH,
-            )
-            for budget in budgets
-        ]
+            results = [
+                Result(
+                    Title=budget.name,
+                    SubTitle="Click to select this budget",
+                    IcoPath=ICO_PATH,
+                )
+                for budget in budgets
+            ]
 
-        return send_results(results)
+            return send_results(results)
+
+    except ynab.exceptions.UnauthorizedException:
+        return send_results(
+            [
+                Result(
+                    Title="Token Error: 403 Unauthorized. Please make sure your access token is correct.",
+                    SubTitle="Click here or press Enter to go to the plugin settings",
+                    IcoPath=ICO_PATH,
+                    JsonRPCAction=open_setting_dialog(),
+                )
+            ]
+        )
