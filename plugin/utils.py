@@ -25,10 +25,32 @@ def handle_ynab_error(e: Exception) -> ResultResponse:
     if not message.startswith("api error:"):
         raise e
 
-    items = message.split(":")[1].split("-")
-    error_code = float(items[0].strip())
-    error_name = items[1].strip()
-    error_detail = items[2].strip()
+    error_type = message.split(":")
+    if len(error_type) < 2:
+        return send_simple_result(
+            title="Unexpected YNAB API error format", subtitle=message
+        )
+
+    error_items = error_type[1].split("-")
+    if len(error_items) < 3:
+        return send_simple_result(
+            title="Unexpected YNAB API error structure", subtitle=message
+        )
+
+    error_code_str = error_items[0].strip()
+    error_code: int | float = 0
+    try:
+        error_code = int(error_code_str)
+    except ValueError:
+        try:
+            error_code = float(error_code_str)
+        except ValueError as ve:
+            return send_simple_result(
+                title="Unexpected YNAB API error code format", subtitle=str(ve)
+            )
+
+    error_name = error_items[1].strip()
+    error_detail = error_items[2].strip()
 
     if error_code == 401:
         return send_simple_result(
