@@ -1,3 +1,3 @@
 [submodule "pynab"]
 	path = pynab
-	url = git@github.com:dynacylabs/pynab.git
+	url = https://github.com/dynacylabs/pynab.git
