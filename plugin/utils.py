@@ -44,7 +44,7 @@ def handle_ynab_error(e: Exception) -> ResultResponse:
     except ValueError:
         try:
             error_code = float(error_code_str)
-        except ValueError as ve:
+        except ValueError:
             return send_simple_result(
                 title="Unexpected YNAB API error code format",
                 subtitle=f"Expected number, got '{error_code_str}'",
