@@ -45,7 +45,8 @@ def query(query: str) -> ResultResponse:
             )
 
         if not query or (
-            query.lower() in "budget" and not query.lower().startswith("budget")
+            "budget".startswith(query.lower())
+            and not query.lower().startswith("budget")
         ):
             results = [
                 Result(
