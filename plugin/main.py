@@ -6,7 +6,7 @@ from pynab.schemas import Budget
 import logging
 
 from plugin.utils import send_simple_result, handle_ynab_error
-from constants import ICO_PATH
+from plugin.constants import ICO_PATH
 
 
 # Custom logging filter to ignore API error logs from pynab

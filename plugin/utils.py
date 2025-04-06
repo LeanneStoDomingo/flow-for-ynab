@@ -1,7 +1,7 @@
 from pyflowlauncher import JsonRPCAction, Result, ResultResponse, send_results
 from pyflowlauncher.api import open_setting_dialog, open_url
 
-from constants import ICO_PATH
+from plugin.constants import ICO_PATH
 
 
 def send_simple_result(
@@ -46,7 +46,8 @@ def handle_ynab_error(e: Exception) -> ResultResponse:
             error_code = float(error_code_str)
         except ValueError as ve:
             return send_simple_result(
-                title="Unexpected YNAB API error code format", subtitle=str(ve)
+                title="Unexpected YNAB API error code format",
+                subtitle=f"Expected number, got '{error_code_str}'",
             )
 
     error_name = error_items[1].strip()
