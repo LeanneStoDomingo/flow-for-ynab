@@ -1,65 +1,120 @@
-from pyflowlauncher import Plugin, Result, ResultResponse, send_results
+from pyflowlauncher import Plugin, Result, ResultResponse, send_results, api
 from pyflowlauncher.settings import settings
-from pyflowlauncher.api import open_setting_dialog
 from pynab.pynab import Pynab
+from pynab.api import Api
 from pynab.schemas import Budget
-import logging
+import os
 
-from plugin.utils import send_simple_result, handle_ynab_error
-from plugin.constants import ICO_PATH
-
-
-# Custom logging filter to ignore API error logs from pynab
-class IgnoreApiErrorFilter(logging.Filter):
-    def filter(self, record):
-        # Only allow logs that are NOT about API errors
-        return "api error" not in record.getMessage()
+import plugin.utils as utils
+import plugin.constants as constants
 
 
-logging.basicConfig(level=logging.ERROR)
-logging.getLogger().addFilter(IgnoreApiErrorFilter())
-
+utils.configure_logging()
 
 plugin = Plugin()
+
+STATE_SETTINGS_PATH = os.path.join(
+    plugin.root_dir(), "..", "..", "Settings", "flow-for-ynab.json"
+)
 
 
 @plugin.on_method
 def query(query: str) -> ResultResponse:
     access_token = settings().get("access_token")
     if not access_token:
-        return send_simple_result(
+        return utils.send_simple_result(
             title="YNAB Personal Access Token is missing",
             subtitle="Click here or press Enter to go to the plugin settings",
-            JsonRPCAction=open_setting_dialog(),
+            JsonRPCAction=api.open_setting_dialog(),
         )
 
-    if not query:
-        return send_simple_result(
-            title="budget",
-            subtitle="ynab budget <budget_name>",
-        )
+    active_budget_id = utils.get_active_budget_id(STATE_SETTINGS_PATH)
 
     try:
         pynab = Pynab(access_token)
+        pynab_api = Api(pynab)
 
-        if query.startswith("budget"):
+        active_budget = utils.get_active_budget(
+            pynab_api, active_budget_id, STATE_SETTINGS_PATH
+        )
+        if not active_budget:
+            return utils.send_simple_result(
+                title="No budgets found",
+                subtitle="Please create a budget in YNAB",
+                JsonRPCAction=api.open_url(constants.YNAB_URL),
+            )
+
+        if not query or (
+            "budget".startswith(query.lower())
+            and not query.lower().startswith("budget")
+        ):
+            results = [
+                Result(
+                    Title="budget",
+                    SubTitle="ynab budget <budget_name>",
+                    IcoPath=constants.ICO_PATH,
+                ),
+                Result(
+                    Title=f"Active Budget: {active_budget.name}",
+                    SubTitle=f"ID: {active_budget.id}",
+                    IcoPath=constants.ICO_PATH,
+                    ContextData={"budget_url": utils.get_budget_url(active_budget.id)},
+                ),
+            ]
+
+            return send_results(results)
+
+        if query.lower().startswith("budget"):
             budgets = pynab.budgets
+
+            query_items = query.split(" ", maxsplit=1)
+            search = ""
+            if len(query_items) > 1:
+                search = query_items[1].strip().lower()
 
             results = []
 
             for budget_id in budgets:
                 budget: Budget = budgets[budget_id]
+
+                if search not in budget.name.lower():
+                    continue
+
                 results.append(
                     Result(
                         Title=budget.name,
                         SubTitle=f"ID: {budget.id}",
-                        IcoPath=ICO_PATH,
+                        IcoPath=constants.ICO_PATH,
+                        JsonRPCAction={
+                            "method": "select_budget_action",
+                            "parameters": [budget.id],
+                        },
+                        ContextData={"budget_url": utils.get_budget_url(budget.id)},
                     )
                 )
 
             return send_results(results)
 
     except Exception as e:
-        return handle_ynab_error(e)
+        return utils.handle_ynab_error(e)
 
     return send_results([])
+
+
+@plugin.on_method
+def context_menu(context_data: dict) -> ResultResponse:
+    budget_url = context_data.get("budget_url")
+
+    if budget_url is not None:
+        return utils.send_simple_result(
+            title="Open budget in browser",
+            subtitle=budget_url,
+            JsonRPCAction=api.open_url(budget_url),
+        )
+
+    return send_results([])
+
+
+@plugin.on_method
+def select_budget_action(budget_id: str):
+    utils.set_active_budget_id(budget_id, STATE_SETTINGS_PATH)

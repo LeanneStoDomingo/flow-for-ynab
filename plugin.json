@@ -7,7 +7,7 @@
     "Name": "Flow for YNAB",
     "Description": "View your YNAB budget with Flow Launcher",
     "Author": "Leanne Sto. Domingo",
-    "Version": "0.0.2",
+    "Version": "0.0.3",
     "Language": "python",
     "Website": "https://github.com/LeanneStoDomingo/flow-for-ynab",
     "IcoPath": "./icon.png",
